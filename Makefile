@@ -1,9 +1,5 @@
 include $(TOPDIR)/rules.mk
 
-# 2011-05-16
-# 16:35 < bremner_> right. well, I currently build debian packages this way 
-#                   (PLT_SETUP_OPTIONS="--no-zo --no-docs") most architectures.
-
 PKG_NAME:=racket
 PKG_VERSION:=5.1
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
@@ -70,6 +66,13 @@ HOST_CONFIGURE_VARS = \
 	LDFLAGS="$(HOST_LDFLAGS)" \
 	SHELL="$(BASH)"
 
+# 2011-05-16
+# 16:35 < bremner_> right. well, I currently build debian packages this way
+#                   (PLT_SETUP_OPTIONS="--no-zo --no-docs") most architectures.
+PLT_SETUP_OPTIONS=--no-zo --no-docs
+
+MAKE_INSTALL_FLAGS += PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
+
 # We need to tell the Boehm GC it is being cross-compiled.
 MAKE_FLAGS += HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include"
 
@@ -95,8 +98,11 @@ endef
 define Host/Install
 # Disappointingly, OpenWRT's Host/Install/Default rule doesn't let you
 # override HOST_BUILD_DIR locally, so this is a straight copy of the
-# text from that rule, modified as needed:
-	$(_SINGLE)$(MAKE) -C $(HOST_BUILD_DIR)/$(CONFIGURE_PATH) install
+# text from that rule, modified as needed. We also add
+# PLT_SETUP_OPTIONS here.
+	$(_SINGLE)$(MAKE) -C $(HOST_BUILD_DIR)/$(CONFIGURE_PATH) \
+		PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
+		install
 endef
 
 define Build/Configure
@@ -149,6 +155,8 @@ define Package/racket/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/. $(1)/usr/lib/
 endef
+
+compile: host-install
 
 $(eval $(call HostBuild))
 $(eval $(call BuildPackage,racket-common))
