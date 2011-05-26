@@ -71,7 +71,20 @@ HOST_CONFIGURE_VARS = \
 #                   (PLT_SETUP_OPTIONS="--no-zo --no-docs") most architectures.
 PLT_SETUP_OPTIONS=--no-zo --no-docs
 
-MAKE_INSTALL_FLAGS += PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
+# These are the flags for building the target racket, not the host
+# racket. The host racket's make install options are given explicitly
+# in the Host/Install rule below.
+#
+# Here we add:
+#  - PLT_SETUP_OPTIONS, to avoid building zos and docs
+#  - BOOTSTRAP_BINDIR, so that we run the host racket during build of
+#    the target racket
+#  - RACKET, so that the target gracket build process uses the host
+#    racket instead of trying to use the target racket
+MAKE_INSTALL_FLAGS += \
+	PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
+	BOOTSTRAP_BINDIR=$(HOST_BUILD_DIR)/$(MAKE_PATH)/racket \
+	RACKET=$(HOST_BUILD_DIR)/$(MAKE_PATH)/racket/racketcgc
 
 # We need to tell the Boehm GC it is being cross-compiled.
 MAKE_FLAGS += HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include"
