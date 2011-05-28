@@ -77,14 +77,11 @@ PLT_SETUP_OPTIONS=--no-zo --no-docs
 #
 # Here we add:
 #  - PLT_SETUP_OPTIONS, to avoid building zos and docs
-#  - BOOTSTRAP_BINDIR, so that we run the host racket during build of
-#    the target racket
-#  - RACKET, so that the target gracket build process uses the host
-#    racket instead of trying to use the target racket
+#  - HOST_RACKET_BUILD_ROOT, so that we run the host racket during build of
+#    the target racket, instead of trying to run a target binary on the host
 MAKE_INSTALL_FLAGS += \
 	PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
-	BOOTSTRAP_BINDIR=$(HOST_BUILD_DIR)/$(MAKE_PATH)/racket \
-	RACKET=$(HOST_BUILD_DIR)/$(MAKE_PATH)/racket/racketcgc
+	HOST_RACKET_BUILD_ROOT=$(HOST_BUILD_DIR)/$(MAKE_PATH)
 
 # We need to tell the Boehm GC it is being cross-compiled.
 MAKE_FLAGS += HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include"
@@ -123,6 +120,17 @@ define Build/Configure
 $(call Build/Configure/Default)
 endef
 
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/. $(1)/usr/include/
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib*.a $(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/usr/lib/racket
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/buildinfo $(1)/usr/lib/racket/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/mzdyn.o $(1)/usr/lib/racket/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/starter $(1)/usr/lib/racket/
+endef
+
 define Package/racket/Default
 	SUBMENU:=Racket
 	SECTION:=lang
@@ -142,7 +150,7 @@ endef
 
 define Package/racket-common/description
 $(call Package/racket/Default/description)
-	This package contains the compiled Racket libraries.
+	This package contains the Racket libraries.
 endef
 
 define Package/racket
@@ -156,17 +164,13 @@ $(call Package/racket/Default/description)
 endef
 
 define Package/racket-common/install
-	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/. $(1)/usr/include/
-	$(INSTALL_DIR) $(1)/usr/share/racket/collects
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/racket/collects $(1)/usr/share/racket/collects
+	$(INSTALL_DIR) $(1)/usr/lib/racket/collects
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/collects $(1)/usr/lib/racket/
 endef
 
 define Package/racket/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/. $(1)/usr/bin/
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/. $(1)/usr/lib/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
 endef
 
 compile: host-install
