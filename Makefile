@@ -37,6 +37,8 @@ HOST_CONFIGURE_CMD:=../configure
 CONFIGURE_ARGS += \
 	--enable-cgcdefault \
 	--disable-plot \
+	--disable-jit \
+	--disable-futures
 
 # For simply building the .zos on the host, we don't need plot.
 HOST_CONFIGURE_ARGS += \
