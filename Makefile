@@ -83,9 +83,12 @@ PLT_SETUP_OPTIONS=--no-zo --no-docs
 #  - PLT_SETUP_OPTIONS, to avoid building zos and docs
 #  - HOST_RACKET_BUILD_ROOT, so that we run the host racket during build of
 #    the target racket, instead of trying to run a target binary on the host
+#  - STRIP_DEBUG, overriding use of strip(1) for the host with the target's
+#    strip(1).
 MAKE_INSTALL_FLAGS += \
 	PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
-	HOST_RACKET_BUILD_ROOT=$(HOST_BUILD_DIR)/$(MAKE_PATH)
+	HOST_RACKET_BUILD_ROOT=$(HOST_BUILD_DIR)/$(MAKE_PATH) \
+	STRIP_DEBUG="$(TARGET_CROSS)strip -S"
 
 # We need to tell the Boehm GC it is being cross-compiled.
 MAKE_FLAGS += HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include"
