@@ -94,7 +94,7 @@ define Host/Configure
 # directory, to make the test -x check pass, and then using
 # ../configure to actually run it, in order for the relative path
 # magic in ./configure to work out.
-	ln -s $(HOST_BUILD_DIR)/$(CONFIGURE_PATH)/../configure $(HOST_BUILD_DIR)/$(CONFIGURE_PATH)
+	ln -sf $(HOST_BUILD_DIR)/$(CONFIGURE_PATH)/../configure $(HOST_BUILD_DIR)/$(CONFIGURE_PATH)
 $(call Host/Configure/Default,,,$(CONFIGURE_PATH))
 endef
 
