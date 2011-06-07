@@ -1,5 +1,0 @@
-#!/bin/bash
-"true"; exec racket -f "$0" -m "$@" # -*- scheme -*-
-
-(define (main . args)
-  (pretty-print args))
