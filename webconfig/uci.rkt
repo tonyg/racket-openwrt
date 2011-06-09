@@ -292,9 +292,5 @@
      (parameterize ((uci-program-name (list "../uci/uci/uci" "-c../uci/examples")))
        exp ...))))
 
-(require test-engine/racket-tests)
-
-(check-expect (split-line "a 'b' 'c'\\''d' 'e'f'g''h'")
-	      '("a" "b" "c'd" "e" "f" "g" "h"))
-
-(test)
+(assert (equal? (split-line "a 'b' 'c'\\''d' 'e'f'g''h'")
+		'("a" "b" "c'd" "e" "f" "g" "h")))
