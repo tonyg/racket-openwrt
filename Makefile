@@ -30,20 +30,22 @@ CONFIGURE_CMD:=../configure
 
 HOST_CONFIGURE_CMD:=../configure
 
-# According to the Debian packaging of Racket, the MIPS architecture
-# doesn't like the 3m collector, so we fall back to the Boehm
-# collector here. TODO: revisit this once we have the MIPS machine
-# available.
+# There's no GUI on the router, so disable gracket. There's no MIPS
+# support in the JIT yet, so disable the JIT. The uClibc that OpenWRT
+# uses doesn't have great support for POSIX TLS, so disable pthreads,
+# futures, and places.
 CONFIGURE_ARGS += \
-	--enable-cgcdefault \
+	--disable-gracket \
 	--disable-plot \
 	--disable-jit \
 	--disable-pthread \
 	--disable-futures \
 	--disable-places
 
-# For simply building the .zos on the host, we don't need plot.
+# For simply building the .zos on the host, we don't need plot or
+# graphics.
 HOST_CONFIGURE_ARGS += \
+	--disable-gracket \
 	--disable-plot
 
 # Another OpenWRT oversight: HOST_CPPFLAGS doesn't exist; instead, it
@@ -90,8 +92,12 @@ MAKE_INSTALL_FLAGS += \
 	HOST_RACKET_BUILD_ROOT=$(HOST_BUILD_DIR)/$(MAKE_PATH) \
 	STRIP_DEBUG="$(TARGET_CROSS)strip -S"
 
-# We need to tell the Boehm GC it is being cross-compiled.
-MAKE_FLAGS += HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include"
+# We need to tell the Boehm GC it is being cross-compiled, and we also
+# need to set HOST_RACKET_BUILD_ROOT for the same reason we do in
+# MAKE_INSTALL_FLAGS.
+MAKE_FLAGS += \
+	HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include" \
+	HOST_RACKET_BUILD_ROOT=$(HOST_BUILD_DIR)/$(MAKE_PATH)
 
 define Host/Configure
 	mkdir -p $(HOST_BUILD_DIR)/$(CONFIGURE_PATH)
@@ -134,7 +140,7 @@ define Build/InstallDev
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib*.a $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/racket
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/buildinfo $(1)/usr/lib/racket/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/mzdyn.o $(1)/usr/lib/racket/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/mzdyn*.o $(1)/usr/lib/racket/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/racket/starter $(1)/usr/lib/racket/
 endef
 
