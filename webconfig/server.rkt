@@ -1,7 +1,9 @@
-#!/usr/bin/env racket -f
+#!/usr/bin/env racket
+#lang racket/base
 
 (require web-server/servlet
-         web-server/servlet-env)
+         web-server/servlet-env
+	 racket/list)
 
 (require "uci.rkt")
 

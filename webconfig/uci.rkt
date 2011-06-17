@@ -1,7 +1,12 @@
-#lang racket
+#lang racket/base
 
 (require srfi/13)
 (require (only-in rnrs assert))
+(require racket/list)
+(require (only-in racket/string string-append*))
+(require racket/match)
+(require racket/system)
+(require racket/port)
 
 (provide (struct-out uci-package)
 	 (struct-out uci-section)

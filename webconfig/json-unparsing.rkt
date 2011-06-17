@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 ;;; json-unparsing: SJSON printing and pretty-printing, compatible
 ;;; with Neil Van Dyke's json-parsing.ss module.
 ;;;
