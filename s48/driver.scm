@@ -12,6 +12,7 @@
 
 ,config ,load config.scm
 ,open process
+,open dircompat
 ,open uci
 ,open ioutils
 ,open srfi-1

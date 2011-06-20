@@ -251,12 +251,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Invoking the UCI command-line tool.
 
-;; TODO: switch over for real
-;;(define uci-program-name (make-parameter (list "/usr/bin/env" "uci")))
-(define uci-program-name
-  (let ((cwd-rel (lambda (x) (string-append (path->string (current-directory)) x))))
-    (make-parameter (list (cwd-rel "../uci/uci/uci")
-			  (string-append "-c" (cwd-rel "../uci/examples"))))))
+(define uci-program-name (make-parameter (list "/usr/bin/env" "uci")))
 
 (define (run-uci args input-lines)
   (call-with-values (lambda ()

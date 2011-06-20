@@ -93,12 +93,20 @@
     (set! dispatch dr)
     (set! entry-url du)))
 
-(define port-number
+(define running-on-the-real-hardware?
   (call-with-values (lambda () (simple-pipeline "" "/usr/bin/env" "uname" "-m"))
     (lambda (output error-output)
-      (if (string=? output "mips")
-	  80
-	  8000))))
+      (string=? output "mips"))))
+
+(define port-number (if running-on-the-real-hardware? 80 8000))
+
+(if (not running-on-the-real-hardware?)
+    (let ((cwd-rel (lambda (x) (string-append (path->string (current-directory)) x))))
+      (display "Using the fake uci")
+      (uci-program-name (list (cwd-rel "../uci/uci/uci")
+			      (string-append "-c" (cwd-rel "../uci/examples")))))
+    (display "Using the real uci"))
+(newline)
 
 (for-each display (list "Running on port "port-number"..."))
 (newline)
