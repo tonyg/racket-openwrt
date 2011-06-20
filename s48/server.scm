@@ -96,7 +96,7 @@
 (define running-on-the-real-hardware?
   (call-with-values (lambda () (simple-pipeline "" "/usr/bin/env" "uname" "-m"))
     (lambda (output error-output)
-      (string=? output "mips"))))
+      (string=? (string-trim-both output) "mips"))))
 
 (define port-number (if running-on-the-real-hardware? 80 8000))
 
@@ -110,5 +110,5 @@
 
 (for-each display (list "Running on port "port-number"..."))
 (newline)
-(define daemon (make-http-daemon 8000 dispatch))
+(define daemon (make-http-daemon port-number dispatch))
 (run-http-daemon daemon)
