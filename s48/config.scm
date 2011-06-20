@@ -33,7 +33,9 @@
 (define-structure ioutils
   (export read-line
 	  port->lines
+	  port->lines/close
 	  port->string
+	  port->string/close
 	  display-lines
 	  eof
 	  flush-output)

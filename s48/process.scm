@@ -76,5 +76,5 @@
     (display input-string stdin)
     (close-output-port stdin)
     (controller 'wait)
-    (values (port->string stdout #t)
-	    (port->string stderr #t))))
+    (values (port->string/close stdout)
+	    (port->string/close stderr))))

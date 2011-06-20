@@ -19,6 +19,9 @@
 		 (reverse acc))
 	  (loop (cons line acc))))))
 
+(define (port->lines/close port)
+  (port->lines port #t))
+
 (define (port->string port . maybe-and-close?)
   (let loop ((acc '()))
     (let ((ch (read-char port)))
@@ -28,6 +31,9 @@
 		     (close-input-port port))
 		 (list->string (reverse acc)))
 	  (loop (cons ch acc))))))
+
+(define (port->string/close port)
+  (port->string port #t))
 
 (define (display-lines lines . maybe-port)
   (let ((port (if (null? maybe-port) (current-output-port) (car maybe-port))))

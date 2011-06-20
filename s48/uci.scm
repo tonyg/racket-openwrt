@@ -266,9 +266,9 @@
       (flush-output stdin)
       (close-output-port stdin)
       (controller 'wait)
-      (display (port->string stderr #t) (current-error-port))
+      (display (port->string/close stderr) (current-error-port))
       (case (controller 'status)
-	((done-ok) (port->lines stdout #t))
+	((done-ok) (port->lines/close stdout))
 	(else (close-input-port stdout)
 	      #f)))))
 
