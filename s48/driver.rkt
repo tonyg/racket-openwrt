@@ -20,5 +20,6 @@
     (close-input-port p)
     v))
 
+(include "simple-pipeline.scm")
 (include "uci.scm")
 (include "server.scm")

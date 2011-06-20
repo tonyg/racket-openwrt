@@ -93,7 +93,14 @@
     (set! dispatch dr)
     (set! entry-url du)))
 
-(display "Running...")
+(define port-number
+  (call-with-values (lambda () (simple-pipeline "" "/usr/bin/env" "uname" "-m"))
+    (lambda (output error-output)
+      (if (string=? output "mips")
+	  80
+	  8000))))
+
+(for-each display (list "Running on port "port-number"..."))
 (newline)
 (define daemon (make-http-daemon 8000 dispatch))
 (run-http-daemon daemon)

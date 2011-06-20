@@ -52,7 +52,8 @@
   (open srfi-23) ;; error
   (open srfi-34) ;; exceptions
   (open ioutils)
-  (files "process.scm"))
+  (files "process.scm"
+	 "simple-pipeline.scm"))
 
 (define-structure uci
   (export uci-package

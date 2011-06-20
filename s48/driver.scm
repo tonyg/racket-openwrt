@@ -11,6 +11,7 @@
 ,open xxexpr
 
 ,config ,load config.scm
+,open process
 ,open uci
 ,open ioutils
 ,open srfi-1
