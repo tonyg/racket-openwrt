@@ -10,6 +10,10 @@
 ;; Blocks of text inside <rfc1035>...</rfc1035> also from RFC-1035.
 ;; RFC-3596 specifies "DNS Extensions to Support IP Version 6".
 
+;; RFC-2782 specifies the DNS SRV record, though weirdly it omits a
+;; wire-level definition of the format! Presumably people have just
+;; copied what they see everyone else do here!
+
 (provide (struct-out dns-message)
 	 (struct-out question)
 	 (struct-out rr)
@@ -18,6 +22,7 @@
 	 (struct-out mx)
 	 (struct-out soa)
 	 (struct-out wks)
+	 (struct-out srv)
 
 	 value->query-opcode query-opcode->value
 	 value->query-response-code query-response-code->value
@@ -65,6 +70,8 @@
 
 (struct wks (address protocol bitmap) #:transparent)
 
+(struct srv (priority weight port target) #:transparent)
+
 ;;---------------------------------------------------------------------------
 ;; Mappings for protocol constants of various types
 
@@ -102,7 +109,8 @@
   (minfo 14)
   (mx 15)
   (txt 16)
-  (aaaa 28))
+  (aaaa 28)
+  (srv 33))
 
 (define-mapping qtype->value value->qtype
   #:forward-default type->value
@@ -426,6 +434,12 @@
     ((wks) (bit-string-case rdata
 	     ([a b c d protocol (bitmap : binary)]
 	      (wks (vector a b c d) protocol bitmap))))
+    ((srv) (bit-string-case rdata
+	     ([(priority : bits 16)
+	       (weight : bits 16)
+	       (port : bits 16)
+	       (target : binary)]
+	      (srv priority weight port (parse-single-domain-name whole-packet target)))))
     (else (bit-string->bytes rdata))))
 
 (define (encode-rr rr)
@@ -464,6 +478,10 @@
     ((wks) (match (wks-address rdata)
 	     ((vector a b c d)
 	      (bit-string a b c d (wks-protocol rdata) ((wks-bitmap rdata) : binary)))))
+    ((srv) (bit-string ((srv-priority rdata) : bits 16)
+		       ((srv-weight rdata) : bits 16)
+		       ((srv-port rdata) : bits 16)
+		       ((encode-domain-name (srv-target rdata)) : binary)))
     (else rdata)))
 
 ;;---------------------------------------------------------------------------
