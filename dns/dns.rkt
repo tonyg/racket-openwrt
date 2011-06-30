@@ -518,7 +518,7 @@
 		  (server-port (if (string? server) 53 (cadr server))))
 	      (udp-send-to s server-hostname server-port (dns-message->packet query))
 	      (let ((buffer (make-bytes 512))) ;; maximum DNS reply length
-		(let ((result (sync/timeout 3 (udp-receive!-evt s buffer))))
+		(let ((result (sync/timeout timeout (udp-receive!-evt s buffer))))
 		  ;; TODO: maybe receive only specifically from the queried IP address?
 		  (if result
 		      (let ((reply-length (car result)))
