@@ -506,9 +506,20 @@
     ((11) 45)
     ((45) #f)))
 
+(define *total-port-finding-attempts* 100) ;; TODO: eliminate arbitrary 100?
+
 (define (raw-dns-query query [servers '("127.0.0.1")])
   (let ((s (udp-open-socket #f #f)))
-    (udp-bind! s #f 0)
+    (let find-a-port ((remaining-tries *total-port-finding-attempts*))
+      (if (zero? remaining-tries)
+	  (error 'raw-dns-query "Could not find a free UDP port in ~v tries"
+		 *total-port-finding-attempts*)
+	  (let ((port-number (+ 1024 (random (- 65536 1024)))))
+	    (with-handlers [(exn:fail:network?
+			     (lambda (e)
+			       ;; Bind failure. Port in use?
+			       (find-a-port (- remaining-tries 1))))]
+	      (udp-bind! s #f port-number)))))
     ;; (let ((local-port
     ;; 	   (let-values (((local-addr local-port remote-addr remote-port)
     ;; 			 (udp-addresses s #t)))
