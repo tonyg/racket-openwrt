@@ -264,8 +264,7 @@
 
 (define (encode-domain-name labels)
   (cond
-   ((null? labels) (bytes))
-   ((null? (cdr labels)) (encode-label (car labels)))
+   ((null? labels) (bytes 0))
    (else (bit-string-append (encode-label (car labels))
 			    (encode-domain-name (cdr labels))))))
 
