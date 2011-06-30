@@ -38,12 +38,12 @@
 ;; Structure definitions
 
 (struct dns-message (id
-		     response?
+		     direction
 		     opcode
-		     authoritative?
-		     truncated?
-		     recursion-desired?
-		     recursion-available?
+		     authoritative
+		     truncated
+		     recursion-desired
+		     recursion-available
 		     response-code
 		     questions
 		     answers
@@ -166,11 +166,14 @@
 ;;     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 ;; </rfc1035>
 
-(define (bit->boolean n)
-  (positive? n))
+(define (bit->value n if0 if1)
+  (if (positive? n) if1 if0))
 
-(define (boolean->bit b)
-  (if b 1 0))
+(define (value->bit b if0 if1)
+  (cond
+   ((eq? b if0) 0)
+   ((eq? b if1) 1)
+   (else (error 'value->bit "Value supplied is neither ~v nor ~v: ~v" if0 if1 b))))
 
 (define (packet->dns-message packet)
   (bit-string-case packet
@@ -199,12 +202,12 @@
        (when (not (zero? (bit-string-length sections0)))
 	 (error 'packet->dns-message "Packet too long"))
        (dns-message id
-		    (bit->boolean qr)
+		    (bit->value qr 'request 'response)
 		    (value->query-opcode opcode)
-		    (bit->boolean aa)
-		    (bit->boolean tc)
-		    (bit->boolean rd)
-		    (bit->boolean ra)
+		    (bit->value aa 'non-authoritative 'authoritative)
+		    (bit->value tc 'not-truncated 'truncated)
+		    (bit->value rd 'no-recursion-desired 'recursion-desired)
+		    (bit->value ra 'no-recursion-available 'recursion-available)
 		    (value->query-response-code rcode)
 		    q-section
 		    a-section
@@ -214,12 +217,17 @@
 (define (dns-message->packet m)
   (bit-string->bytes
    (bit-string ((dns-message-id m) : bits 16)
-	       ((boolean->bit (dns-message-response? m)) : bits 1)
+	       ((value->bit (dns-message-direction m)
+			    'request 'response) : bits 1)
 	       ((query-opcode->value (dns-message-opcode m)) : bits 4)
-	       ((boolean->bit (dns-message-authoritative? m)) : bits 1)
-	       ((boolean->bit (dns-message-truncated? m)) : bits 1)
-	       ((boolean->bit (dns-message-recursion-desired? m)) : bits 1)
-	       ((boolean->bit (dns-message-recursion-available? m)) : bits 1)
+	       ((value->bit (dns-message-authoritative m)
+			    'non-authoritative 'authoritative) : bits 1)
+	       ((value->bit (dns-message-truncated m)
+			    'not-truncated 'truncated) : bits 1)
+	       ((value->bit (dns-message-recursion-desired m)
+			    'no-recursion-desired 'recursion-desired) : bits 1)
+	       ((value->bit (dns-message-recursion-available m)
+			    'no-recursion-available 'recursion-available) : bits 1)
 	       (0 : bits 3)
 	       ((query-response-code->value (dns-message-response-code m)) : bits 4)
 	       ((length (dns-message-questions m)) : bits 16)
@@ -461,31 +469,31 @@
 ;;---------------------------------------------------------------------------
 
 (define (make-dns-query questions
-			[recurse? #f])
+			[recursion-desired 'no-recursion-desired])
   (dns-message (random 65536)
-	       #f
+	       'request
 	       'query
-	       #f
-	       #f
-	       recurse?
-	       #f
+	       'non-authoritative
+	       'not-truncated
+	       recursion-desired
+	       'no-recursion-available
 	       'ok
 	       questions
 	       '()
 	       '()
 	       '()))
 
-(define (make-dns-response query response-code answers authoritative?
-			   [recursion-available? #f]
+(define (make-dns-response query response-code answers authoritative
+			   [recursion-available 'no-recursion-available]
 			   [authorities '()]
 			   [additional '()])
   (dns-message (dns-message-id query)
-	       #t
+	       'response
 	       (dns-message-opcode query)
-	       authoritative?
-	       #f
-	       (dns-message-recursion-desired? query)
-	       recursion-available?
+	       authoritative
+	       'not-truncated
+	       (dns-message-recursion-desired query)
+	       recursion-available
 	       response-code
 	       (dns-message-questions query)
 	       answers
