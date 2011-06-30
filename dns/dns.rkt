@@ -508,23 +508,21 @@
 
 (define *total-port-finding-attempts* 100) ;; TODO: eliminate arbitrary 100?
 
+(define (bind-to-random-port! s)
+  (let find-a-port ((remaining-tries *total-port-finding-attempts*))
+    (if (zero? remaining-tries)
+	(error 'bind-to-random-port! "Could not find a free UDP port in ~v tries"
+	       *total-port-finding-attempts*)
+	(let ((port-number (+ 1024 (random (- 65536 1024)))))
+	  (with-handlers [(exn:fail:network?
+			   (lambda (e)
+			     ;; Bind failure. Port in use?
+			     (find-a-port (- remaining-tries 1))))]
+	    (udp-bind! s #f port-number))))))
+
 (define (raw-dns-query query [servers '("127.0.0.1")])
   (let ((s (udp-open-socket #f #f)))
-    (let find-a-port ((remaining-tries *total-port-finding-attempts*))
-      (if (zero? remaining-tries)
-	  (error 'raw-dns-query "Could not find a free UDP port in ~v tries"
-		 *total-port-finding-attempts*)
-	  (let ((port-number (+ 1024 (random (- 65536 1024)))))
-	    (with-handlers [(exn:fail:network?
-			     (lambda (e)
-			       ;; Bind failure. Port in use?
-			       (find-a-port (- remaining-tries 1))))]
-	      (udp-bind! s #f port-number)))))
-    ;; (let ((local-port
-    ;; 	   (let-values (((local-addr local-port remote-addr remote-port)
-    ;; 			 (udp-addresses s #t)))
-    ;; 	     local-port)))
-    ;;   (printf "Local port number is ~v~n" local-port))
+    (bind-to-random-port! s)
     (let search ((timeout 3)
 		 (remaining-servers servers))
       (if (null? remaining-servers)
