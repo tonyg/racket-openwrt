@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require "dns.rkt")
+
 ;; Wed Jun 29 16:33:58 2011 (4e0b8c36): UDP: localhost sent 28 bytes:
 ;; 00000000: 66 3A 01 00 00 01 00 00 : 00 00 00 00 06 67 6F 6F  f:...........goo
 ;; 00000010: 67 6C 65 03 63 6F 6D 00 : 00 FF 00 01              gle.com.....

@@ -40,8 +40,30 @@
 	 raw-dns-query)
 
 ;;---------------------------------------------------------------------------
-;; Structure definitions
+;; Data definitions
 
+;; A DomainName is a ListOf<Bytes>, representing a domain name. The
+;; head of the list is the leftmost label; for example, www.google.com
+;; is represented as '(#"www" #"google" #"com").
+
+;; A ShortString is a String with length 255 or shorter.
+
+;; An IPv4 is a (vector Byte Byte Byte Byte), representing an IPv4
+;; address. For example, 127.0.0.1 is represented as (vector 127 0 0
+;; 1).
+
+;; An IPv6 is a Vector of length 16 containing Bytes, representing an
+;; IPv6 address. For example, 2001:0db8:85a3:0000:0000:8a2e:0370:7334
+;; is represented as (vector #x20 #x01 #x0d #xb8 #x85 #xa3 #x00 #x00
+;; #x00 #x00 #x8a #x2e #x03 #x70 #x73 #x34).
+
+;; A DNSMessage is a
+;; (dns-message Uint16 Direction Opcode Authoritativeness
+;; Truncatedness RecursionDesired RecursionAvailable ResponseCode
+;; ListOf<Question> ListOf<RR> ListOf<RR> ListOf<RR>).
+;;
+;; Interpreted as either a DNS request or reply, depending on the
+;; Direction.
 (struct dns-message (id
 		     direction
 		     opcode
@@ -56,25 +78,41 @@
 		     additional)
 	#:transparent)
 
+;; A Question is a (question DomainName QueryType QueryClass),
+;; representing a DNS question: "What are the RRs for the given name,
+;; type and class?"
 (struct question (name type class) #:transparent)
 
+;; An RR is a (rr DomainName RRType RRClass Uint32 RData),
+;; representing a resource record.
 (struct rr (name type class ttl rdata) #:transparent)
 
+;; An RData is one of
+;; - an IPv4, an "A" record
+;; - an IPv6, an "AAAA" record
+;; - (hinfo ShortString ShortString), a host information record [O]
+;; - (minfo DomainName DomainName), a mailbox information record [O]
+;; - (mx Uint16 DomainName), a mail exchanger record
+;; - (soa DomainName DomainName Uint32 Uint32 Uint32 Uint32 Uint32), a
+;;   start-of-authority record
+;; - (wks IPv4 Byte Bytes), a Well-Known Service [O]
+;; - (srv Uint16 Uint16 Uint16 DomainName), an "SRV" record
+;;
+;; In each case, the RData's variant MUST line up correctly with the
+;; type field of any RR containing it.
+;;
+;; Many of these variants are obsolete in today's DNS database (marked
+;; [O] above).
 (struct hinfo (cpu os) #:transparent)
-
 (struct minfo (rmailbx emailbx) #:transparent)
-
 (struct mx (preference exchange) #:transparent)
-
 (struct soa (mname rname serial refresh retry expire minimum) #:transparent)
-
 (struct wks (address protocol bitmap) #:transparent)
-
 (struct srv (priority weight port target) #:transparent)
 
-;;---------------------------------------------------------------------------
-;; Mappings for protocol constants of various types
-
+;; An Opcode is a Symbol or a Number, one of the possibilities given
+;; in the following define-mapping. It represents a DNS message
+;; operation; see the RFC for details.
 (define-mapping value->query-opcode query-opcode->value
   #:forward-default values
   #:backward-default values
@@ -82,14 +120,21 @@
   (1 iquery)
   (2 status))
 
+;; A ResponseCode is a Symbol or a Number, one of the possibilities
+;; given in the following define-mapping. It represents the outcome of
+;; a DNS query.
 (define-mapping value->query-response-code query-response-code->value
-  (0 ok)
+  (0 no-error)
   (1 format-error)
   (2 server-failure)
   (3 name-error)
   (4 not-implemented)
   (5 refused))
 
+;; An RRType is a Symbol or a Number, one of the possibilities given
+;; in the following define-mapping. It represents the type of an
+;; RR. When used in an RR with an RData, the RRType and the RData
+;; variant must correspond.
 (define-mapping type->value value->type
   #:forward-default values
   #:backward-default values
@@ -112,6 +157,9 @@
   (aaaa 28)
   (srv 33))
 
+;; A QueryType is a Symbol or Number (as given in the following
+;; define-mapping) or an RRType. It specifies the kinds of records
+;; being sought after in a DNS query.
 (define-mapping qtype->value value->qtype
   #:forward-default type->value
   #:backward-default value->type
@@ -120,6 +168,10 @@
   (maila 254)
   (* 255))
 
+;; An RRClass is a Symbol or a Number, one of the possibilities given
+;; in the following define-mapping. It represents the "class" of DNS
+;; records being discussed. All classes except 'in are obsolete in
+;; today's DNS databases.
 (define-mapping class->value value->class
   #:forward-default values
   #:backward-default values
@@ -128,6 +180,9 @@
   (ch 3)
   (hs 4))
 
+;; A QueryClass is a Symbol or Number (as given in the following
+;; define-mapping) or an RRClass. It specifies the "class" of records
+;; being sought after in a DNS query.
 (define-mapping qclass->value value->qclass
   #:forward-default class->value
   #:backward-default value->class
@@ -495,7 +550,7 @@
 	       'not-truncated
 	       recursion-desired
 	       'no-recursion-available
-	       'ok
+	       'no-error
 	       questions
 	       '()
 	       '()
@@ -541,6 +596,7 @@
 (define (raw-dns-query query [servers '("127.0.0.1")])
   (let ((s (udp-open-socket #f #f)))
     (bind-to-random-port! s)
+    ;; TODO: randomize ordering of servers in list.
     (let search ((timeout 3)
 		 (remaining-servers servers))
       (if (null? remaining-servers)
@@ -551,10 +607,12 @@
 	  (let ((server (car remaining-servers)))
 	    (let ((server-hostname (if (string? server) server (car server)))
 		  (server-port (if (string? server) 53 (cadr server))))
+	      ;;(write `(querying ,server-hostname ,server-port with timeout ,timeout)) (newline)
 	      (udp-send-to s server-hostname server-port (dns-message->packet query))
 	      (let ((buffer (make-bytes 512))) ;; maximum DNS reply length
 		(let ((result (sync/timeout timeout (udp-receive!-evt s buffer))))
 		  ;; TODO: maybe receive only specifically from the queried IP address?
+		  ;;(write `(response ,result)) (newline)
 		  (if result
 		      (let ((reply-length (car result)))
 			(packet->dns-message (sub-bit-string buffer 0 (* 8 reply-length))))
