@@ -240,20 +240,20 @@
 
 (define (packet->dns-message packet)
   (bit-string-case packet
-    ([ (id : bits 16)
-       (qr : bits 1)
-       (opcode : bits 4)
-       (aa : bits 1)
-       (tc : bits 1)
-       (rd : bits 1)
-       (ra : bits 1)
-       (= 0 : bits 3)
-       (rcode : bits 4)
-       (qdcount : bits 16)
-       (ancount : bits 16)
-       (nscount : bits 16)
-       (arcount : bits 16)
-       (sections4 : binary) ]
+    ([ (id :: bits 16)
+       (qr :: bits 1)
+       (opcode :: bits 4)
+       (aa :: bits 1)
+       (tc :: bits 1)
+       (rd :: bits 1)
+       (ra :: bits 1)
+       (= 0 :: bits 3)
+       (rcode :: bits 4)
+       (qdcount :: bits 16)
+       (ancount :: bits 16)
+       (nscount :: bits 16)
+       (arcount :: bits 16)
+       (sections4 :: binary) ]
      (let*-values (((q-section sections3)
 		    (parse-section packet decode-question qdcount sections4))
 		   ((a-section sections2)
@@ -279,29 +279,29 @@
 
 (define (dns-message->packet m)
   (bit-string->bytes
-   (bit-string ((dns-message-id m) : bits 16)
+   (bit-string ((dns-message-id m) :: bits 16)
 	       ((value->bit (dns-message-direction m)
-			    'request 'response) : bits 1)
-	       ((query-opcode->value (dns-message-opcode m)) : bits 4)
+			    'request 'response) :: bits 1)
+	       ((query-opcode->value (dns-message-opcode m)) :: bits 4)
 	       ((value->bit (dns-message-authoritative m)
-			    'non-authoritative 'authoritative) : bits 1)
+			    'non-authoritative 'authoritative) :: bits 1)
 	       ((value->bit (dns-message-truncated m)
-			    'not-truncated 'truncated) : bits 1)
+			    'not-truncated 'truncated) :: bits 1)
 	       ((value->bit (dns-message-recursion-desired m)
-			    'no-recursion-desired 'recursion-desired) : bits 1)
+			    'no-recursion-desired 'recursion-desired) :: bits 1)
 	       ((value->bit (dns-message-recursion-available m)
-			    'no-recursion-available 'recursion-available) : bits 1)
-	       (0 : bits 3)
-	       ((query-response-code->value (dns-message-response-code m)) : bits 4)
-	       ((length (dns-message-questions m)) : bits 16)
-	       ((length (dns-message-answers m)) : bits 16)
-	       ((length (dns-message-authorities m)) : bits 16)
-	       ((length (dns-message-additional m)) : bits 16)
+			    'no-recursion-available 'recursion-available) :: bits 1)
+	       (0 :: bits 3)
+	       ((query-response-code->value (dns-message-response-code m)) :: bits 4)
+	       ((length (dns-message-questions m)) :: bits 16)
+	       ((length (dns-message-answers m)) :: bits 16)
+	       ((length (dns-message-authorities m)) :: bits 16)
+	       ((length (dns-message-additional m)) :: bits 16)
 	       ((bit-string-append
 		 (encode-section encode-question (dns-message-questions m))
 		 (encode-section encode-rr (dns-message-answers m))
 		 (encode-section encode-rr (dns-message-authorities m))
-		 (encode-section encode-rr (dns-message-additional m))) : binary))))
+		 (encode-section encode-rr (dns-message-additional m))) :: binary))))
 
 (define (parse-section packet parser remaining-records input)
   (let loop ((count remaining-records)
@@ -327,7 +327,7 @@
 (define (parse-domain-name whole-packet input pointers-followed)
   (bit-string-case input
 
-    ([(= 3 : bits 2) (offset : bits 14) (rest : binary)]
+    ([(= 3 :: bits 2) (offset :: bits 14) (rest :: binary)]
      (if (member offset pointers-followed)
 	 (error 'parse-domain-name "DNS compressed-pointer loop detected")
 	 (let-values (((lhs rhs) (bit-string-split-at whole-packet (* 8 offset))))
@@ -335,10 +335,10 @@
 			 (parse-domain-name whole-packet rhs (cons offset pointers-followed))))
 	     (values labels rest)))))
 
-    ([(= 0 : bits 8) (rest : binary)]
+    ([(= 0 :: bits 8) (rest :: binary)]
      (values '() rest))
 
-    ([(= 0 : bits 2) (len : bits 6) (label : binary bytes len) (rest : binary)]
+    ([(= 0 :: bits 2) (len :: bits 6) (label :: binary bytes len) (rest :: binary)]
      ;; TODO: validate labels: make sure they conform to the prescribed syntax
      (let-values (((labels leftover)
 		   (parse-domain-name whole-packet rest pointers-followed)))
@@ -378,7 +378,7 @@
   (bit-string-case input
     ([]
      '())
-    ([len (body : binary bytes len) (rest : binary)]
+    ([len (body :: binary bytes len) (rest :: binary)]
      (cons (bit-string->bytes body)
 	   (extract-character-strings rest)))))
 
@@ -406,9 +406,9 @@
 (define (decode-question whole-packet input)
   (let-values (((qname remainder) (parse-domain-name whole-packet input '())))
     (bit-string-case remainder
-      ([(qtype : bits 16)
-	(qclass : bits 16)
-	(tail : binary)]
+      ([(qtype :: bits 16)
+	(qclass :: bits 16)
+	(tail :: binary)]
        (values (question qname
 			 (value->qtype qtype)
 			 (value->qclass qclass))
@@ -416,8 +416,8 @@
 
 (define (encode-question q)
   (bit-string-append (encode-domain-name (question-name q))
-		     (bit-string ((qtype->value (question-type q)) : bits 16)
-				 ((qclass->value (question-class q)) : bits 16))))
+		     (bit-string ((qtype->value (question-type q)) :: bits 16)
+				 ((qclass->value (question-class q)) :: bits 16))))
 
 ;; <rfc1035>
 ;; All RRs have the same top level format shown below:
@@ -447,12 +447,12 @@
 (define (decode-rr whole-packet input)
   (let-values (((name remainder) (parse-domain-name whole-packet input '())))
     (bit-string-case remainder
-      ([(type-number : bits 16)
-	(class : bits 16)
-	(ttl : bits 32)
-	(rdlength : bits 16)
-	(rdata : binary bytes rdlength)
-	(tail : binary)]
+      ([(type-number :: bits 16)
+	(class :: bits 16)
+	(ttl :: bits 32)
+	(rdlength :: bits 16)
+	(rdata :: binary bytes rdlength)
+	(tail :: binary)]
        (let ((type (value->type type-number)))
 	 (values (rr name
 		     type
@@ -467,44 +467,44 @@
     ((hinfo) (apply hinfo (extract-character-strings rdata)))
     ((minfo) (apply minfo (extract-domain-names whole-packet rdata)))
     ((mx) (bit-string-case rdata
-	    ([(preference : bits 16) (exchange : binary)]
+	    ([(preference :: bits 16) (exchange :: binary)]
 	     (mx preference (parse-single-domain-name whole-packet exchange)))))
     ((null) (bit-string->bytes rdata))
     ((soa) (let*-values (((mname rdata1) (parse-domain-name whole-packet rdata '()))
 			 ((rname rdata2) (parse-domain-name whole-packet rdata1 '())))
 	     (bit-string-case rdata2
-	       ([(serial : bits 32)
-		 (refresh : bits 32)
-		 (retry : bits 32)
-		 (expire : bits 32)
-		 (minimum : bits 32)]
+	       ([(serial :: bits 32)
+		 (refresh :: bits 32)
+		 (retry :: bits 32)
+		 (expire :: bits 32)
+		 (minimum :: bits 32)]
 		(soa mname rname serial refresh retry expire minimum)))))
     ((txt) (extract-character-strings rdata))
     ((a) (bit-string-case rdata
 	   ([a b c d]
 	    (vector a b c d))))
     ((aaaa) (bit-string-case rdata
-	      ([(ipv6-addr : binary bits 128)]
+	      ([(ipv6-addr :: binary bits 128)]
 	       (list->vector (bytes->list (bit-string->bytes ipv6-addr))))))
     ((wks) (bit-string-case rdata
-	     ([a b c d protocol (bitmap : binary)]
+	     ([a b c d protocol (bitmap :: binary)]
 	      (wks (vector a b c d) protocol bitmap))))
     ((srv) (bit-string-case rdata
-	     ([(priority : bits 16)
-	       (weight : bits 16)
-	       (port : bits 16)
-	       (target : binary)]
+	     ([(priority :: bits 16)
+	       (weight :: bits 16)
+	       (port :: bits 16)
+	       (target :: binary)]
 	      (srv priority weight port (parse-single-domain-name whole-packet target)))))
     (else (bit-string->bytes rdata))))
 
 (define (encode-rr rr)
   (let ((encoded-rdata (encode-rdata (rr-type rr) (rr-rdata rr))))
     (bit-string-append (encode-domain-name (rr-name rr))
-		       (bit-string ((type->value (rr-type rr)) : bits 16)
-				   ((class->value (rr-class rr)) : bits 16)
-				   ((rr-ttl rr) : bits 32)
-				   ((/ (bit-string-length encoded-rdata) 8) : bits 16)
-				   (encoded-rdata : binary)))))
+		       (bit-string ((type->value (rr-type rr)) :: bits 16)
+				   ((class->value (rr-class rr)) :: bits 16)
+				   ((rr-ttl rr) :: bits 32)
+				   ((/ (bit-string-length encoded-rdata) 8) :: bits 16)
+				   (encoded-rdata :: binary)))))
 
 (define (encode-rdata type rdata)
   (case type
@@ -513,30 +513,30 @@
 				(encode-character-string (hinfo-os rdata))))
     ((minfo) (bit-string-append (encode-character-string (minfo-rmailbx rdata))
 				(encode-character-string (minfo-emailbx rdata))))
-    ((mx) (bit-string ((mx-preference rdata) : bits 16)
-		      ((encode-domain-name (mx-exchange rdata)) : binary)))
+    ((mx) (bit-string ((mx-preference rdata) :: bits 16)
+		      ((encode-domain-name (mx-exchange rdata)) :: binary)))
     ((null) rdata)
     ((soa) (bit-string-append (encode-domain-name (soa-mname rdata))
 			      (encode-domain-name (soa-rname rdata))
-			      (bit-string ((soa-serial rdata) : bits 32)
-					  ((soa-refresh rdata) : bits 32)
-					  ((soa-retry rdata) : bits 32)
-					  ((soa-expire rdata) : bits 32)
-					  ((soa-minimum rdata) : bits 32))))
+			      (bit-string ((soa-serial rdata) :: bits 32)
+					  ((soa-refresh rdata) :: bits 32)
+					  ((soa-retry rdata) :: bits 32)
+					  ((soa-expire rdata) :: bits 32)
+					  ((soa-minimum rdata) :: bits 32))))
     ((txt)
      ;; TODO: write and use bit-string-append* instead of using apply here
      (foldl (lambda (s acc) (bit-string-append acc (encode-character-string s)))
 	    (car rdata)
 	    (cdr rdata)))
     ((a) (match rdata ((vector a b c d) (bit-string a b c d))))
-    ((aaaa) (bit-string ((list->bytes (vector->list rdata)) : binary bits 128)))
+    ((aaaa) (bit-string ((list->bytes (vector->list rdata)) :: binary bits 128)))
     ((wks) (match (wks-address rdata)
 	     ((vector a b c d)
-	      (bit-string a b c d (wks-protocol rdata) ((wks-bitmap rdata) : binary)))))
-    ((srv) (bit-string ((srv-priority rdata) : bits 16)
-		       ((srv-weight rdata) : bits 16)
-		       ((srv-port rdata) : bits 16)
-		       ((encode-domain-name (srv-target rdata)) : binary)))
+	      (bit-string a b c d (wks-protocol rdata) ((wks-bitmap rdata) :: binary)))))
+    ((srv) (bit-string ((srv-priority rdata) :: bits 16)
+		       ((srv-weight rdata) :: bits 16)
+		       ((srv-port rdata) :: bits 16)
+		       ((encode-domain-name (srv-target rdata)) :: binary)))
     (else rdata)))
 
 ;;---------------------------------------------------------------------------
