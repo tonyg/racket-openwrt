@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=racket
-PKG_VERSION:=5.1
+PKG_VERSION:=5.2
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE_PROTO:=git
@@ -33,8 +33,10 @@ HOST_CONFIGURE_CMD:=../configure
 # There's no GUI on the router, so disable gracket. There's no MIPS
 # support in the JIT yet, so disable the JIT. The uClibc that OpenWRT
 # uses doesn't have great support for POSIX TLS, so disable pthreads,
-# futures, and places.
+# futures, and places. Finally, use the "--enable-racket" argument to
+# point the target build at the host-built racket interpreter.
 CONFIGURE_ARGS += \
+	--enable-racket="$(HOST_BUILD_DIR)/$(MAKE_PATH)/racket/racket3m" \
 	--disable-gracket \
 	--disable-plot \
 	--disable-jit \
@@ -83,21 +85,15 @@ PLT_SETUP_OPTIONS=--no-zo --no-docs
 #
 # Here we add:
 #  - PLT_SETUP_OPTIONS, to avoid building zos and docs
-#  - HOST_RACKET_BUILD_ROOT, so that we run the host racket during build of
-#    the target racket, instead of trying to run a target binary on the host
 #  - STRIP_DEBUG, overriding use of strip(1) for the host with the target's
 #    strip(1).
 MAKE_INSTALL_FLAGS += \
 	PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)" \
-	HOST_RACKET_BUILD_ROOT=$(HOST_BUILD_DIR)/$(MAKE_PATH) \
 	STRIP_DEBUG="$(TARGET_CROSS)strip -S"
 
-# We need to tell the Boehm GC it is being cross-compiled, and we also
-# need to set HOST_RACKET_BUILD_ROOT for the same reason we do in
-# MAKE_INSTALL_FLAGS.
+# We need to tell the Boehm GC it is being cross-compiled.
 MAKE_FLAGS += \
-	HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include" \
-	HOST_RACKET_BUILD_ROOT=$(HOST_BUILD_DIR)/$(MAKE_PATH)
+	HOSTCC=$(CC) HOSTCFLAGS="-I$(PKG_BUILD_DIR)/src/racket/gc/include"
 
 define Host/Configure
 	mkdir -p $(HOST_BUILD_DIR)/$(CONFIGURE_PATH)
